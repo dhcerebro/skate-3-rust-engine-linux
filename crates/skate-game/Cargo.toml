@@ -19,11 +19,15 @@ path = "src/custom_models_main.rs"
 test = false
 
 [features]
-default = ["dev-dynamic", "steam"]
+# Locked-down default: no Steam, no Bevy dylibs, no updater, no sockets.
+# Windows packaging must pass `--features network,steam` explicitly.
+default = []
 dev-dynamic = ["bevy/dynamic_linking"]
-# Steam lobby/relay transport. --no-default-features builds drop it; direct
-# UDP multiplayer remains available.
-steam = []
+# GitHub updater, UDP host/join, and Steam lobby UI. Off unless requested.
+network = []
+# Steam lobby/relay. Implies `network`. The steamworks crate is not a
+# dependency of this package; the helper binary is built separately.
+steam = ["network"]
 
 [dependencies]
 bevy = { workspace = true, features = ["jpeg", "trace", "debug"] }

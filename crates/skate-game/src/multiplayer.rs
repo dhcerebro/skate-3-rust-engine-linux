@@ -2,6 +2,7 @@
 mod render;
 pub(crate) mod appearance;
 mod appearance_transfer;
+#[cfg(feature = "network")]
 mod transport;
 use crate::{
     app::{FrameSet, SimulationSet},
@@ -9,10 +10,12 @@ use crate::{
 };
 use bevy::prelude::*;
 use skate_net::{
-    directory::{Command as LobbyCommand, Event, Row},
+    directory::{Command as LobbyCommand, Row},
     lobby::{Info, Session},
     packed::{self, BodyState, Packed},
 };
+#[cfg(feature = "network")]
+use skate_net::directory::Event;
 use std::{
     collections::{BTreeMap, VecDeque},
     net::SocketAddr,
@@ -63,6 +66,7 @@ struct Remote {
 }
 #[derive(Resource)]
 pub(crate) struct Multiplayer {
+    #[cfg(feature = "network")]
     transport: Option<Box<dyn transport::Transport>>,
     lobby: Option<Session>,
     info: Info,
@@ -114,18 +118,27 @@ impl Multiplayer {
         self.lobby.is_some()
     }
     pub fn leave(&mut self) {
+        #[cfg(feature = "network")]
         if let (Some(lobby), Some(t)) = (&self.lobby, &mut self.transport) {
             for p in lobby.goodbye() {
                 let _ = t.send(p.peer, &p.data);
             }
         }
-        self.transport = None;
+        #[cfg(feature = "network")]
+        {
+            self.transport = None;
+        }
         self.lobby = None;
         self.remotes.clear();
         self.host_code.clear();
         self.room = None;
-        self.status = "Offline. Steam is only needed for Steam multiplayer.".into();
+        self.status = if cfg!(feature = "network") {
+            "Offline. Steam is only needed for Steam multiplayer.".into()
+        } else {
+            "Offline. Networking is compiled out of this build.".into()
+        };
     }
+    #[cfg(feature = "network")]
     fn start(&mut self, transport: Box<dyn transport::Transport>, session: u64, host: Option<u64>) {
         self.leave();
         self.info.id = unique();
@@ -143,11 +156,19 @@ impl Multiplayer {
         self.status = "Waiting for players... (up to 10)".into();
     }
     pub fn local(&mut self, host: bool) {
+        #[cfg(not(feature = "network"))]
+        {
+            let _ = host;
+            self.status = "Networking is compiled out of this build.".into();
+            return;
+        }
+        #[cfg(feature = "network")]
         let bind = if host {
             "127.0.0.1:31030"
         } else {
             "127.0.0.1:0"
         };
+        #[cfg(feature = "network")]
         match transport::Direct::new(bind.parse().unwrap()) {
             Ok(t) => self.start(
                 Box::new(t),
@@ -162,6 +183,15 @@ impl Multiplayer {
         }
     }
     fn lobby_command(&mut self, command: LobbyCommand) {
+        #[cfg(not(feature = "network"))]
+        {
+            let _ = command;
+            self.status = "Networking is compiled out of this build.".into();
+            self.browser_status = self.status.clone();
+            return;
+        }
+        #[cfg(feature = "network")]
+        {
         // Retry discovery after Steam was opened following an initialization failure.
         if !self.active()
             && self.transport.as_ref().is_some_and(|t| {
@@ -191,6 +221,7 @@ impl Multiplayer {
         if !self.active() {
             self.status = self.browser_status.clone();
         }
+        }
     }
     pub fn browse(&mut self, page: usize) {
         self.lobby_command(LobbyCommand::Browse {
@@ -216,6 +247,14 @@ impl Multiplayer {
         });
     }
     pub fn steam(&mut self, host: bool) {
+        #[cfg(not(feature = "network"))]
+        {
+            let _ = host;
+            self.status = "Networking is compiled out of this build.".into();
+            return;
+        }
+        #[cfg(feature = "network")]
+        {
         if host {
             self.leave();
             self.lobby_command(LobbyCommand::Host {
@@ -253,6 +292,7 @@ impl Multiplayer {
             Ok(t) => self.start(Box::new(t), session, (peer != 0).then_some(peer)),
             Err(e) => self.status = e,
         }
+        }
     }
 }
 pub(crate) struct MultiplayerPlugin;
@@ -272,6 +312,7 @@ impl Plugin for MultiplayerPlugin {
         let schema =
             network::Schema::new(physics, skater).expect("Default multiplayer collision schema");
         let mut net = Multiplayer {
+            #[cfg(feature = "network")]
             transport: None,
             lobby: None,
             info: Info {
@@ -315,6 +356,7 @@ impl Plugin for MultiplayerPlugin {
             browser_total: 0,
             browser_status: String::new(),
         };
+        #[cfg(feature = "network")]
         if let Some(bind) = config
             .multiplayer
             .host
@@ -328,6 +370,10 @@ impl Plugin for MultiplayerPlugin {
                 Ok(t) => net.start(Box::new(t), config.multiplayer.session, target),
                 Err(e) => net.status = format!("Local multiplayer could not start: {e}"),
             }
+        }
+        #[cfg(not(feature = "network"))]
+        {
+            net.status = "Offline. Networking is compiled out of this build.".into();
         }
         app.insert_resource(net)
             .add_systems(PreUpdate, (world_changed, receive).chain().after(crate::map_transition::MapTransitionSet))
@@ -373,6 +419,13 @@ fn world_changed(
     net.browser_status.clear();
 }
 fn receive(mut net: ResMut<Multiplayer>) {
+    #[cfg(not(feature = "network"))]
+    {
+        let _ = net;
+        return;
+    }
+    #[cfg(feature = "network")]
+    {
     let now = net.started.elapsed().as_millis() as u64;
     let net = &mut *net;
     let Some(t) = &mut net.transport else {
@@ -586,6 +639,7 @@ fn receive(mut net: ResMut<Multiplayer>) {
         );
         net.counts = (s.tx_bytes, s.rx_bytes);
         net.last_metrics = Instant::now();
+    }
     }
 }
 fn prepare(net: Res<Multiplayer>, mut physics: ResMut<GamePhysics>, skater: Res<SkaterRuntime>, vehicles: Res<crate::modding::vehicles::Vehicles>) {

@@ -10,17 +10,33 @@ wgpu uses the system Vulkan driver (Mesa RADV, NVIDIA, etc.).
 - libudev / eudev (gamepad enumeration via gilrs)
 - clang + libclang (bindgen in dependency build scripts)
 
-## Build
+## Build (offline / Steam Deck)
+
+Default features compile out GitHub updates, UDP multiplayer, and Steam.
+`BUILD.sh` also sets `CARGO_NET_OFFLINE=true` so Cargo cannot fetch crates
+while compiling.
 
 ```sh
+# Once, on a guest network:
+./tools/fetch-crates.sh
+
+# Then disable Wi-Fi and compile:
 ./BUILD.sh
+SKATE_ASSETS=/path/to/converted/assets ./PLAY.sh
 ```
 
-Or directly:
+Equivalent Cargo invocation:
 
 ```sh
-cargo build --release -p skate-game -p skate-steam-relay -p skate-xiso
+CARGO_NET_OFFLINE=true cargo build --release --locked --offline --no-default-features \
+    -p skate-game --bin skate3rust -p skate-xiso
 ```
+
+`PLAY.sh` will not invoke Cargo. It requires `SKATE_ASSETS` so the game never
+spawns `support/skate3setup` or the updater helper.
+
+Networking can only be turned back on by passing `--features network` or
+`--features network,steam` to Cargo. `BUILD.sh` refuses those feature names.
 
 Notes:
 
@@ -28,18 +44,11 @@ Notes:
   generally do not ship static wayland/alsa libraries. BUILD.sh detects musl
   via `ldd` and exports `RUSTFLAGS="-C target-feature=-crt-static"` to link
   dynamically against musl.
-- **`dev-dynamic` (bevy dynamic linking)** is a default feature aimed at
-  Windows dev builds. On Linux, and especially on musl, build with
-  `--no-default-features` (Steam lobby support lives behind the default
-  `steam` feature and is also dropped; direct UDP multiplayer still works,
-  and the steamworks SDK only ships glibc binaries anyway).
-- **Setup**: the packaged `skate3setup` helper is a PyInstaller executable
-  built for Windows/glibc. On Linux run the pipeline with the system Python
-  (`tools/setup.py`, needs numpy/pillow/tkinter). A `support/skate3setup`
-  shim next to the game binary can simply exec it.
+- **Setup**: run `tools/setup.py` with system Python (numpy/pillow/tkinter)
+  against an extracted Xbox 360 `default.xex` folder, or a locally built
+  `skate-xiso`. The extract-xiso GitHub download is disabled.
 - **ISO extraction**: `skate-xiso` (workspace crate, xdvdfs-based) extracts
-  Xbox 360 ISOs natively; the pipeline prefers it over the extract-xiso
-  download. A pre-extracted game folder (`default.xex` + `data/`) also works.
+  Xbox 360 ISOs. Set `SKATE_XISO` if the binary is not under `target/`.
 
 ## Gamepads
 

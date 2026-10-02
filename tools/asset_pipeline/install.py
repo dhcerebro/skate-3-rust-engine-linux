@@ -1,6 +1,6 @@
 """Local owned-disc installation. No game content is downloaded or packaged."""
 from pathlib import Path
-import hashlib,json,os,shutil,subprocess,sys,time,urllib.request,uuid,zipfile
+import hashlib,json,os,shutil,subprocess,sys,time,uuid,zipfile
 from concurrent.futures import ThreadPoolExecutor,as_completed
 from tools.owned_game.big import BigArchive
 
@@ -48,8 +48,12 @@ def xiso_extractor(base,report):
         if candidate.is_file():return candidate
     if _musl():
         raise RuntimeError('musl libc: the prebuilt extract-xiso (glibc) is not supported. '
-                           'Build the native extractor: cargo build --release -p skate-xiso')
-    return dependency(base/'tools','extract-xiso',XISO_URL,XISO_SHA,report)
+                           'Build the native extractor: cargo build --release --locked --offline -p skate-xiso')
+    raise RuntimeError(
+        'No local skate-xiso binary found. Build it with '
+        '`cargo build --release --locked --offline -p skate-xiso` or set SKATE_XISO. '
+        f'Network downloads of extract-xiso are disabled (cache root {base}).'
+    )
 
 def digest(path):
     with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
@@ -61,17 +65,10 @@ def remove_intermediate(path,root):
     shutil.rmtree(target)
 
 def download(url,expected,cache,report):
-    cache.mkdir(parents=True,exist_ok=True)
-    archive=cache/url.rsplit('/',1)[1]
-    if not archive.is_file() or digest(archive)!=expected:
-        report('Downloading '+archive.name)
-        temp=archive.with_suffix('.part')
-        request=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 Skate3RustEngine-Setup/1.0'})
-        with urllib.request.urlopen(request,timeout=60) as response,temp.open('wb') as output:
-            shutil.copyfileobj(response,output,1024*1024)
-        if digest(temp)!=expected:raise RuntimeError('Download checksum mismatch: '+archive.name)
-        temp.replace(archive)
-    return archive
+    raise RuntimeError(
+        'Network downloads are disabled. Use a local skate-xiso build or an extracted '
+        f'default.xex folder (refused {url!r} sha={expected} cache={cache} report={report}).'
+    )
 
 def unpack_zip(archive,destination):
     destination=destination.resolve()

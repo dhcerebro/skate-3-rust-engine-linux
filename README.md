@@ -54,11 +54,10 @@ are shipped. The included format-demo map is original procedural content.
 ## Linux
 
 Experimental Linux support. Install the system dependencies (wayland,
-libxcb, libxkbcommon, alsa-lib, libudev/eudev, clang) and run `BUILD.sh`,
-then `PLAY.sh`. On musl systems BUILD.sh links dynamically
-(`-C target-feature=-crt-static`); use `--no-default-features` to skip the
-glibc-only Steam helper and Bevy dynamic linking. See
-[docs/LINUX.md](docs/LINUX.md) for details.
+libxcb, libxkbcommon, alsa-lib, libudev/eudev, clang). Default builds have
+**no Steam, no updater, and no sockets**. On a guest network run
+`./tools/fetch-crates.sh` once, then go offline and run `./BUILD.sh` and
+`SKATE_ASSETS=… ./PLAY.sh`. See [docs/LINUX.md](docs/LINUX.md).
 
 Implementation notes are in [`docs/`](docs/). Patched Bevy dependencies and
 their licenses are in [`vendor/`](vendor/). This is an unofficial project,

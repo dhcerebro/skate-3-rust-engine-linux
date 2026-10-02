@@ -49,6 +49,8 @@ mod grind_world;
 mod skate_world;
 
 fn main() -> bevy::app::AppExit {
+    #[cfg(not(feature = "network"))]
+    eprintln!("REPORT_META network=compiled_out updater=compiled_out");
     match updater::recover() {
         Ok(true) => return bevy::app::AppExit::Success,
         Err(error) => { eprintln!("{error}"); return bevy::app::AppExit::Success; },
