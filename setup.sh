@@ -44,7 +44,8 @@ if [ -z "$micromamba" ]; then
     micromamba="$HOME/bin/micromamba"
     [ -x "$micromamba" ] || die "failed to unpack micromamba to $HOME/bin/micromamba"
 fi
-pkgs="compilers gcc gxx binutils clang clangxx libclang pkg-config wayland libxkbcommon libxcb alsa-lib eudev"
+# conda-forge has libudev (headers + .pc), not eudev.
+pkgs="compilers gcc gxx binutils clang clangxx libclang pkg-config wayland libxkbcommon libxcb alsa-lib libudev"
 if [ ! -d "$prefix/conda-meta" ]; then
     "$micromamba" create -y -p "$prefix" -c conda-forge $pkgs
 else
