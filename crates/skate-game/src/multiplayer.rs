@@ -94,8 +94,20 @@ pub(crate) struct Multiplayer {
 }
 impl Multiplayer {
     pub(crate) fn diagnostic_summary(&self) -> String {
-        let provider = if self.room.is_some() { "platform_relay" }
-            else if self.transport.is_some() { "direct_local" } else { "inactive" };
+        #[cfg(feature = "network")]
+        let provider = if self.room.is_some() {
+            "platform_relay"
+        } else if self.transport.is_some() {
+            "direct_local"
+        } else {
+            "inactive"
+        };
+        #[cfg(not(feature = "network"))]
+        let provider = if self.room.is_some() {
+            "platform_relay"
+        } else {
+            "inactive"
+        };
         let rtt = self.lobby.as_ref().map(|lobby| lobby.stats.rtt_ms);
         format!("provider:{provider} active:{} remote_count:{} rtt_ms:{rtt:?}", self.active(), self.remotes.len())
     }
