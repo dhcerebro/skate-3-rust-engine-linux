@@ -17,7 +17,7 @@ Default features compile out GitHub updates, UDP multiplayer, and Steam.
 while compiling.
 
 ```sh
-# Once, on a guest network:
+# Once, on a guest network (cargo fetch --locked; no -p flag):
 ./tools/fetch-crates.sh
 
 # Then disable Wi-Fi and compile:
