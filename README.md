@@ -56,8 +56,9 @@ are shipped. The included format-demo map is original procedural content.
 Experimental Linux support. Install the system dependencies (wayland,
 libxcb, libxkbcommon, alsa-lib, libudev/eudev, clang). Default builds have
 **no Steam, no updater, and no sockets**. On a guest network run
-`./tools/fetch-crates.sh` once, then go offline and run `./BUILD.sh` and
-`SKATE_ASSETS=… ./PLAY.sh`. See [docs/LINUX.md](docs/LINUX.md).
+`./setup.sh` once (home-folder compiler, pkg-config, crate fetch; no sudo),
+then airplane mode and `./BUILD.sh`. Play with `SKATE_ASSETS=… ./PLAY.sh`.
+See [docs/LINUX.md](docs/LINUX.md).
 
 Implementation notes are in [`docs/`](docs/). Patched Bevy dependencies and
 their licenses are in [`vendor/`](vendor/). This is an unofficial project,

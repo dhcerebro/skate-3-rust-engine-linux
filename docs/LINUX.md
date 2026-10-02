@@ -17,13 +17,18 @@ Default features compile out GitHub updates, UDP multiplayer, and Steam.
 while compiling.
 
 ```sh
-# Once, on a guest network (cargo fetch --locked; no -p flag):
-./tools/fetch-crates.sh
+# Once, on a guest network (no sudo):
+./setup.sh
 
-# Then disable Wi-Fi and compile:
+# Then airplane mode and compile:
 ./BUILD.sh
 SKATE_ASSETS=/path/to/converted/assets ./PLAY.sh
 ```
+
+`setup.sh` installs rustup, a micromamba toolchain under `$HOME/ccenv`
+(override with `SKATE_DECK_PREFIX`), Python numpy/Pillow, and `cargo fetch
+--locked`. It writes `.deck-env` for `BUILD.sh`. It does not compile the
+game and does not download extract-xiso.
 
 Equivalent Cargo invocation:
 

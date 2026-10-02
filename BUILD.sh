@@ -1,8 +1,5 @@
 #!/bin/sh
-# Steam Deck / paranoid Linux build: no Steam, no updater, no sockets,
-# and Cargo is forced offline so it cannot fetch crates during the compile.
-#
-# One-time guest-network step first: ./tools/fetch-crates.sh
+# Offline compile. Run ./setup.sh on guest Wi-Fi first, then airplane mode.
 set -e
 cd "$(dirname "$0")"
 case " $* ${CARGO_FEATURES-} ${CARGO_TERM_FEATURES-}" in
@@ -11,6 +8,21 @@ case " $* ${CARGO_FEATURES-} ${CARGO_TERM_FEATURES-}" in
         exit 1
         ;;
 esac
+if [ -f "$PWD/.deck-env" ]; then
+    # shellcheck disable=SC1091
+    . "$PWD/.deck-env"
+elif [ -f "$HOME/.cargo/env" ]; then
+    # shellcheck disable=SC1091
+    . "$HOME/.cargo/env"
+fi
+if ! command -v cc >/dev/null 2>&1; then
+    echo "linker 'cc' not found. On guest Wi-Fi run: ./setup.sh" >&2
+    exit 1
+fi
+if ! command -v pkg-config >/dev/null 2>&1; then
+    echo "pkg-config not found. On guest Wi-Fi run: ./setup.sh" >&2
+    exit 1
+fi
 if [ "$(ldd --version 2>&1 | grep -ci musl)" -gt 0 ]; then
     export RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-C target-feature=-crt-static"
 fi

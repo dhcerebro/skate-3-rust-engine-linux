@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$0")"
 bin=./target/release/skate3rust
 if [ ! -x "$bin" ]; then
-    echo "Build first with ./BUILD.sh (after ./tools/fetch-crates.sh on a guest network)." >&2
+    echo "Build first: ./setup.sh (guest Wi-Fi) then airplane mode and ./BUILD.sh" >&2
     exit 1
 fi
 if [ -z "${SKATE_ASSETS-}" ]; then
