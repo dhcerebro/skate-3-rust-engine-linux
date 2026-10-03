@@ -51,4 +51,8 @@ resolved=$(resolve_assets "$SKATE_ASSETS") || {
     exit 1
 }
 echo "PLAY.sh assets=$resolved"
+echo "Steam Deck: if only pause works, hold ☰ (Start) 2s to leave desktop keyboard mode."
+# Do not inherit Steam's SDL ignore-list; gilrs still sees evdev either way.
+unset SDL_GAMECONTROLLER_IGNORE_DEVICES
+export SDL_JOYSTICK_HIDAPI_STEAMDECK="${SDL_JOYSTICK_HIDAPI_STEAMDECK:-1}"
 exec "$bin" --assets "$resolved" "$@"

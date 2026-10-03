@@ -17,18 +17,28 @@ Default features compile out GitHub updates, UDP multiplayer, and Steam.
 while compiling.
 
 ```sh
-# Once, on a guest network (no sudo):
-./setup.sh
-
-# Then airplane mode and compile:
-./BUILD.sh
+# Safer (read the script, then run it):
+git clone https://github.com/dhcerebro/skate-3-rust-engine-linux.git
+cd skate-3-rust-engine-linux
+./steamdeck_setup.sh
+# prompted for an Xbox 360 .iso or default.xex (not PS3)
 SKATE_ASSETS=$HOME/skate3-assets ./PLAY.sh
 ```
 
-`setup.sh` installs rustup, a micromamba toolchain under `$HOME/ccenv`
-(override with `SKATE_DECK_PREFIX`), Python numpy/Pillow, and `cargo fetch
---locked`. It writes `.deck-env` for `BUILD.sh`. It does not compile the
-game and does not download extract-xiso.
+`./setup.sh` is a wrapper for `steamdeck_setup.sh`. That script installs rustup,
+a micromamba toolchain under `$HOME/ccenv` (`libudev`, not `eudev`; no sudo),
+Python numpy/Pillow, `cargo fetch --locked` (no `-p`), then compiles
+`skate3rust` + `skate-xiso` offline, extracts a 360 ISO with the workspace
+extractor, and converts assets. Pass `--source /path/to.iso` to skip the
+prompt, `--toolchain-only` for fetch-only.
+
+Piped one-liner (clones, then re-execs from the checkout so prompts use the TTY).
+Until this is on `main`, pin the branch that has the script:
+
+```sh
+export SKATE_DECK_BRANCH=cursor/offline-deck-build-f946
+curl -fsSL https://raw.githubusercontent.com/dhcerebro/skate-3-rust-engine-linux/${SKATE_DECK_BRANCH}/steamdeck_setup.sh | sh
+```
 
 Equivalent Cargo invocation:
 
@@ -59,8 +69,14 @@ Notes:
 
 Non-Windows input uses gilrs with its default filters disabled (raw axes,
 matching what the TU3 input converter expects). Controller layouts come from
-an embedded copy of SDL_GameControllerDB, and users can override or extend
-mappings via the standard `SDL_GAMECONTROLLERCONFIG` environment variable.
+an embedded copy of SDL_GameControllerDB, plus extra Steam Deck GUID versions.
+Users can override mappings via `SDL_GAMECONTROLLERCONFIG`.
+
+On Steam Deck **desktop mode**, Steam's background client puts the built-in
+pad in keyboard/mouse layout ("lizard mode"). Escape/Start still open the
+pause menu; sticks do nothing. Hold **☰ (Start) for about two seconds** to
+switch to the gamepad action set. `PLAY.sh` prints this hint. The runtime
+prefers a mapped Steam Deck / Xbox node over touchpad/keyboard evdev devices.
 
 ## macOS (Apple Silicon, untested by us)
 

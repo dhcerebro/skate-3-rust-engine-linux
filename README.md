@@ -55,9 +55,9 @@ are shipped. The included format-demo map is original procedural content.
 
 Experimental Linux support. Install the system dependencies (wayland,
 libxcb, libxkbcommon, alsa-lib, libudev/eudev, clang). Default builds have
-**no Steam, no updater, and no sockets**. On a guest network run
-`./setup.sh` once (home-folder compiler, pkg-config, crate fetch; no sudo),
-then airplane mode and `./BUILD.sh`. Play with `SKATE_ASSETS=… ./PLAY.sh`.
+**no Steam, no updater, and no sockets**. `./steamdeck_setup.sh` (or
+`./setup.sh`) is the guided Deck path: toolchain, offline compile, Xbox 360
+ISO/xex convert. Then `SKATE_ASSETS=$HOME/skate3-assets ./PLAY.sh`.
 See [docs/LINUX.md](docs/LINUX.md).
 
 Implementation notes are in [`docs/`](docs/). Patched Bevy dependencies and
