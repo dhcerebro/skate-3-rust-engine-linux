@@ -37,8 +37,8 @@ CARGO_NET_OFFLINE=true cargo build --release --locked --offline --no-default-fea
     -p skate-game --bin skate3rust -p skate-xiso
 ```
 
-`PLAY.sh` will not invoke Cargo. It requires `SKATE_ASSETS` so the game never
-spawns `support/skate3setup` or the updater helper.
+`PLAY.sh` will not invoke Cargo. `SKATE_ASSETS` may be the `tools/setup.py --base`
+directory (`installation.json`) or the inner `installations/<id>/assets` tree.
 
 Networking can only be turned back on by passing `--features network` or
 `--features network,steam` to Cargo. `BUILD.sh` refuses those feature names.
