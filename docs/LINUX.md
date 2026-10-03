@@ -22,7 +22,7 @@ while compiling.
 
 # Then airplane mode and compile:
 ./BUILD.sh
-SKATE_ASSETS=/path/to/converted/assets ./PLAY.sh
+SKATE_ASSETS=$HOME/skate3-assets ./PLAY.sh
 ```
 
 `setup.sh` installs rustup, a micromamba toolchain under `$HOME/ccenv`
