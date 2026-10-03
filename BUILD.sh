@@ -1,10 +1,10 @@
 #!/bin/sh
-# Offline compile. Run ./setup.sh on guest Wi-Fi first, then airplane mode.
+# Release build without network/steam features. Sources .deck-env when present.
 set -e
 cd "$(dirname "$0")"
 case " $* ${CARGO_FEATURES-} ${CARGO_TERM_FEATURES-}" in
     *network*|*steam*)
-        echo "Refusing a networked/Steam feature set. This script is offline-only." >&2
+        echo "This script builds without --features network/steam. Use cargo directly if you need those." >&2
         exit 1
         ;;
 esac
@@ -16,18 +16,17 @@ elif [ -f "$HOME/.cargo/env" ]; then
     . "$HOME/.cargo/env"
 fi
 if ! command -v cc >/dev/null 2>&1; then
-    echo "linker 'cc' not found. On guest Wi-Fi run: ./setup.sh" >&2
+    echo "linker 'cc' not found. Run ./setup.sh first." >&2
     exit 1
 fi
 if ! command -v pkg-config >/dev/null 2>&1; then
-    echo "pkg-config not found. On guest Wi-Fi run: ./setup.sh" >&2
+    echo "pkg-config not found. Run ./setup.sh first." >&2
     exit 1
 fi
 if [ "$(ldd --version 2>&1 | grep -ci musl)" -gt 0 ]; then
     export RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-C target-feature=-crt-static"
 fi
-export CARGO_NET_OFFLINE=true
-cargo build --release --locked --offline --no-default-features \
+cargo build --release --locked --no-default-features \
     -p skate-game --bin skate3rust \
     -p skate-xiso
-echo "Built target/release/skate3rust and target/release/skate-xiso (network compiled out)."
+echo "Built target/release/skate3rust and target/release/skate-xiso."

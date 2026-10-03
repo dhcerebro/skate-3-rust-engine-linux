@@ -1,16 +1,14 @@
 #!/bin/sh
-# Steam Deck / Linux: clone (if needed), toolchain, fetch, offline build,
-# Xbox 360 ISO extract, asset convert. No sudo. No Steam, updater, or sockets.
+# Steam Deck / Linux: clone (if needed), toolchain, build, Xbox 360 ISO
+# extract, asset convert. No sudo.
 #
-# Hurdles this script encodes:
-#   cargo fetch has no -p; linker cc + pkg-config live in $HOME/ccenv
-#   conda-forge package is libudev (not eudev); skate-xiso is a workspace crate
-#   PLAY.sh accepts the setup --base dir (installation.json), not only .../assets
-#   Xbox 360 default.xex only — a PS3 ISO will not convert
+# Encodes the Deck hurdles: cargo fetch has no -p; cc/pkg-config live in
+# $HOME/ccenv; conda-forge package is libudev (not eudev); skate-xiso is a
+# workspace crate; PLAY.sh accepts the setup --base dir; Xbox 360 default.xex
+# only (not a PS3 ISO).
 #
-# Safer:  git clone <repo> && cd skate-3-rust-engine-linux && ./steamdeck_setup.sh
-# Piped:  curl -fsSL <raw-url>/steamdeck_setup.sh | sh
-#         (clones, then re-execs the copy in the repo so prompts use the TTY)
+#   git clone <repo> && cd skate-3-rust-engine-linux && ./steamdeck_setup.sh
+#   curl -fsSL <raw-url>/steamdeck_setup.sh | sh
 set -e
 
 repo_url="${SKATE_DECK_REPO:-https://github.com/dhcerebro/skate-3-rust-engine-linux.git}"
@@ -20,7 +18,6 @@ assets_base="${SKATE_ASSETS_BASE:-$HOME/skate3-assets}"
 extract_dir="${SKATE_XEX_DIR:-$HOME/skate3-xex}"
 source_path="${SKATE_SOURCE-}"
 toolchain_only=0
-assume_yes=0
 rebuild=0
 reconvert=0
 
@@ -64,8 +61,7 @@ usage() {
 Usage: ./steamdeck_setup.sh [options]
 
   --source PATH     Xbox 360 Skate 3 .iso or extracted default.xex
-  --yes             Skip airplane-mode / confirm prompts
-  --toolchain-only  rustup + micromamba + cargo fetch (old setup.sh)
+  --toolchain-only  rustup + micromamba + cargo fetch only
   --rebuild         Rebuild skate3rust / skate-xiso even if they exist
   --reconvert       Run asset conversion even if installation.json exists
   --help            This text
@@ -79,7 +75,6 @@ while [ $# -gt 0 ]; do
     case $1 in
         --source) source_path=$2; shift 2 ;;
         --source=*) source_path=${1#--source=}; shift ;;
-        --yes|-y) assume_yes=1; shift ;;
         --toolchain-only) toolchain_only=1; shift ;;
         --rebuild) rebuild=1; shift ;;
         --reconvert) reconvert=1; shift ;;
@@ -103,17 +98,6 @@ ask() {
     [ -t 0 ] || die "not a terminal; pass --source /path/to/iso-or-default.xex"
     printf '%s' "$*"
     read -r "$var" || die "no input"
-}
-
-confirm() {
-    [ "$assume_yes" -eq 1 ] && return 0
-    [ -t 0 ] || return 0
-    printf '%s [Y/n] ' "$1"
-    read -r ans || ans=Y
-    case $ans in
-        ''|Y|y|yes|YES) return 0 ;;
-        *) return 1 ;;
-    esac
 }
 
 install_toolchain() {
@@ -186,20 +170,15 @@ install_toolchain() {
     fi
     "$root/.venv/bin/pip" install -q numpy==2.2.6 Pillow==11.3.0
 
-    echo "=== 5/7 cargo fetch --locked (no -p; crates.io once) ==="
+    echo "=== 5/7 cargo fetch --locked ==="
     cargo fetch --locked
 }
 
-build_offline() {
-    echo "=== 6/7 compile (network feature compiled out) ==="
+build_game() {
+    echo "=== 6/7 compile ==="
     if [ "$rebuild" -eq 0 ] && [ -x "$root/target/release/skate3rust" ] && [ -x "$root/target/release/skate-xiso" ]; then
         echo "binaries already present; skip compile (pass --rebuild to force)"
         return 0
-    fi
-    if [ "$assume_yes" -eq 0 ] && [ -t 0 ]; then
-        echo
-        echo "Crate sources are on disk. Enable airplane mode if you want a fully offline compile."
-        confirm "Compile now?" || die "compile skipped"
     fi
     ./BUILD.sh
     [ -x "$root/target/release/skate3rust" ] || die "skate3rust missing after BUILD.sh"
@@ -282,15 +261,15 @@ convert_assets() {
     assets_ready || die "conversion finished but $assets_base is missing game.json / input.cfg (see $assets_base/setup-error.log)"
 }
 
-echo "Steam Deck / Linux setup (offline game build, no sudo)."
+echo "Steam Deck / Linux setup (no sudo)."
 echo "repo=$root"
 install_toolchain
 if [ "$toolchain_only" -eq 1 ]; then
     echo
-    echo "toolchain-only done. Airplane mode, then ./BUILD.sh"
+    echo "toolchain-only done. Run ./BUILD.sh to compile."
     exit 0
 fi
-build_offline
+build_game
 convert_assets
 
 echo
@@ -298,5 +277,5 @@ echo "Ready."
 echo "  SKATE_ASSETS=$assets_base ./PLAY.sh"
 echo
 echo "Steam Deck controls: if only the pause menu works, hold ☰ (Start) for two"
-echo "seconds to leave Steam desktop keyboard mode (lizard mode), then use the sticks."
-echo "A PS3 ISO will not work. Networking is compiled out of this binary."
+echo "seconds to leave Steam desktop keyboard mode, then use the sticks."
+echo "A PS3 ISO will not work."

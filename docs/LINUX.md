@@ -10,14 +10,11 @@ wgpu uses the system Vulkan driver (Mesa RADV, NVIDIA, etc.).
 - libudev / eudev (gamepad enumeration via gilrs)
 - clang + libclang (bindgen in dependency build scripts)
 
-## Build (offline / Steam Deck)
+## Build (Steam Deck)
 
-Default features compile out GitHub updates, UDP multiplayer, and Steam.
-`BUILD.sh` also sets `CARGO_NET_OFFLINE=true` so Cargo cannot fetch crates
-while compiling.
+Default features omit GitHub updates, UDP multiplayer, and Steam.
 
 ```sh
-# Safer (read the script, then run it):
 git clone https://github.com/dhcerebro/skate-3-rust-engine-linux.git
 cd skate-3-rust-engine-linux
 ./steamdeck_setup.sh
@@ -28,9 +25,9 @@ SKATE_ASSETS=$HOME/skate3-assets ./PLAY.sh
 `./setup.sh` is a wrapper for `steamdeck_setup.sh`. That script installs rustup,
 a micromamba toolchain under `$HOME/ccenv` (`libudev`, not `eudev`; no sudo),
 Python numpy/Pillow, `cargo fetch --locked` (no `-p`), then compiles
-`skate3rust` + `skate-xiso` offline, extracts a 360 ISO with the workspace
-extractor, and converts assets. Pass `--source /path/to.iso` to skip the
-prompt, `--toolchain-only` for fetch-only.
+`skate3rust` + `skate-xiso`, extracts a 360 ISO with the workspace extractor,
+and converts assets. Pass `--source /path/to.iso` to skip the prompt,
+`--toolchain-only` for fetch-only.
 
 Piped one-liner (clones, then re-execs from the checkout so prompts use the TTY).
 Until this is on `main`, pin the branch that has the script:
@@ -43,15 +40,15 @@ curl -fsSL https://raw.githubusercontent.com/dhcerebro/skate-3-rust-engine-linux
 Equivalent Cargo invocation:
 
 ```sh
-CARGO_NET_OFFLINE=true cargo build --release --locked --offline --no-default-features \
+cargo build --release --locked --no-default-features \
     -p skate-game --bin skate3rust -p skate-xiso
 ```
 
 `PLAY.sh` will not invoke Cargo. `SKATE_ASSETS` may be the `tools/setup.py --base`
 directory (`installation.json`) or the inner `installations/<id>/assets` tree.
 
-Networking can only be turned back on by passing `--features network` or
-`--features network,steam` to Cargo. `BUILD.sh` refuses those feature names.
+`BUILD.sh` refuses `--features network` / `steam`. Pass those to Cargo directly
+if you want them.
 
 Notes:
 

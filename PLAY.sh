@@ -1,12 +1,12 @@
 #!/bin/sh
-# Launch the locked-down release binary. Does not invoke Cargo (no crate fetch).
+# Launch the release binary. Does not invoke Cargo.
 # SKATE_ASSETS may be the setup --base directory (with installation.json) or
 # the inner installations/<id>/assets tree.
 set -e
 cd "$(dirname "$0")"
 bin=./target/release/skate3rust
 if [ ! -x "$bin" ]; then
-    echo "Build first: ./setup.sh (guest Wi-Fi) then airplane mode and ./BUILD.sh" >&2
+    echo "Build first: ./setup.sh (or ./BUILD.sh if the toolchain is already installed)" >&2
     exit 1
 fi
 
