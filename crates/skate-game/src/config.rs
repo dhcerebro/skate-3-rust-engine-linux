@@ -36,28 +36,13 @@ impl Config {
             match arg.to_str() {
                 Some("--trace" | "--trace-seconds" | "--trace-delay" | "--trace-min-us") => { args.next().ok_or("Trace option requires a value")?; }
                 Some("--trace-wait" | "--trace-gpu") => {}
-                Some("--net-host") => {
-                    #[cfg(not(feature = "network"))]
-                    { return Err("This build has networking compiled out (--net-host rejected)".into()); }
-                    #[cfg(feature = "network")]
-                    { config.multiplayer.host = Some(args.next().ok_or("Missing host bind address")?.to_string_lossy().parse().map_err(|_|"Invalid host bind address")?); }
-                }
+                Some("--net-host") => config.multiplayer.host = Some(args.next().ok_or("Missing host bind address")?.to_string_lossy().parse().map_err(|_|"Invalid host bind address")?),
                 Some("--net-local") => {
-                    #[cfg(not(feature = "network"))]
-                    { return Err("This build has networking compiled out (--net-local rejected)".into()); }
-                    #[cfg(feature = "network")]
-                    {
-                        let bind=args.next().ok_or("--net-local requires bind and peer addresses")?.to_string_lossy().parse().map_err(|_|"Invalid bind address")?;
-                        let peer=args.next().ok_or("--net-local requires peer address")?.to_string_lossy().parse().map_err(|_|"Invalid peer address")?;
-                        config.multiplayer.direct=Some((bind,peer));
-                    }
+                    let bind=args.next().ok_or("--net-local requires bind and peer addresses")?.to_string_lossy().parse().map_err(|_|"Invalid bind address")?;
+                    let peer=args.next().ok_or("--net-local requires peer address")?.to_string_lossy().parse().map_err(|_|"Invalid peer address")?;
+                    config.multiplayer.direct=Some((bind,peer));
                 }
-                Some("--net-session") => {
-                    #[cfg(not(feature = "network"))]
-                    { return Err("This build has networking compiled out (--net-session rejected)".into()); }
-                    #[cfg(feature = "network")]
-                    { config.multiplayer.session=args.next().ok_or("Missing session")?.to_string_lossy().parse().map_err(|_|"Invalid session")?; }
-                }
+                Some("--net-session") => config.multiplayer.session=args.next().ok_or("Missing session")?.to_string_lossy().parse().map_err(|_|"Invalid session")?,
                 Some("--spawn-offset") => {
                     let offset:f32=args.next().ok_or("Missing spawn offset")?.to_string_lossy().parse().map_err(|_|"Invalid spawn offset")?;
                     if !offset.is_finite() || offset.abs()>20. {return Err("Spawn offset must be within 20 metres".into());}

@@ -9,9 +9,9 @@ name = "skate-steam-relay"
 path = "src/main.rs"
 
 [features]
-# Default is a stub that refuses to start. Windows packaging must pass
-# `--features steam` explicitly if a relay is required.
-default = []
+# Default keeps the Windows package behavior. Steam-less targets (e.g. musl)
+# build this crate with --no-default-features and get an error stub binary.
+default = ["steam"]
 steam = ["dep:steamworks"]
 
 [dependencies]

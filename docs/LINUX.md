@@ -10,45 +10,22 @@ wgpu uses the system Vulkan driver (Mesa RADV, NVIDIA, etc.).
 - libudev / eudev (gamepad enumeration via gilrs)
 - clang + libclang (bindgen in dependency build scripts)
 
-## Build (Steam Deck)
-
-Default features omit GitHub updates, UDP multiplayer, and Steam.
+## Build
 
 ```sh
-git clone https://github.com/dhcerebro/skate-3-rust-engine-linux.git
-cd skate-3-rust-engine-linux
-./steamdeck_setup.sh
-# prompted for an Xbox 360 .iso or default.xex (not PS3)
-SKATE_ASSETS=$HOME/skate3-assets ./PLAY.sh
+./BUILD.sh
 ```
 
-`./setup.sh` is a wrapper for `steamdeck_setup.sh`. That script installs rustup,
-a micromamba toolchain under `$HOME/ccenv` (`libudev`, not `eudev`; no sudo),
-Python numpy/Pillow, `cargo fetch --locked` (no `-p`), then compiles
-`skate3rust` + `skate-xiso`, extracts a 360 ISO with the workspace extractor,
-and converts assets. Pass `--source /path/to.iso` to skip the prompt,
-`--toolchain-only` for fetch-only.
-
-Piped one-liner (clones, then re-execs from the checkout so prompts use the TTY).
-Until this is on `main`, pin the branch that has the script:
+Or directly:
 
 ```sh
-export SKATE_DECK_BRANCH=cursor/offline-deck-build-f946
-curl -fsSL https://raw.githubusercontent.com/dhcerebro/skate-3-rust-engine-linux/${SKATE_DECK_BRANCH}/steamdeck_setup.sh | sh
+cargo build --release -p skate-game -p skate-steam-relay -p skate-xiso
 ```
 
-Equivalent Cargo invocation:
-
-```sh
-cargo build --release --locked --no-default-features \
-    -p skate-game --bin skate3rust -p skate-xiso
-```
-
-`PLAY.sh` will not invoke Cargo. `SKATE_ASSETS` may be the `tools/setup.py --base`
-directory (`installation.json`) or the inner `installations/<id>/assets` tree.
-
-`BUILD.sh` refuses `--features network` / `steam`. Pass those to Cargo directly
-if you want them.
+Then `./PLAY.sh`. If `target/release/skate3rust` is missing, `PLAY.sh` runs
+`cargo build` and launches the debug binary. `SKATE_ASSETS` may be a
+`tools/setup.py --base` directory (`installation.json`) or the inner
+`installations/<id>/assets` tree.
 
 Notes:
 
@@ -56,11 +33,45 @@ Notes:
   generally do not ship static wayland/alsa libraries. BUILD.sh detects musl
   via `ldd` and exports `RUSTFLAGS="-C target-feature=-crt-static"` to link
   dynamically against musl.
-- **Setup**: run `tools/setup.py` with system Python (numpy/pillow/tkinter)
-  against an extracted Xbox 360 `default.xex` folder, or a locally built
-  `skate-xiso`. The extract-xiso GitHub download is disabled.
+- **`dev-dynamic` (bevy dynamic linking)** is a default feature aimed at
+  Windows dev builds. On Linux, and especially on musl, build with
+  `--no-default-features` (Steam lobby support lives behind the default
+  `steam` feature and is also dropped; direct UDP multiplayer still works,
+  and the steamworks SDK only ships glibc binaries anyway).
+- **Setup**: the packaged `skate3setup` helper is a PyInstaller executable
+  built for Windows/glibc. On Linux run the pipeline with the system Python
+  (`tools/setup.py`, needs numpy/pillow/tkinter). A `support/skate3setup`
+  shim next to the game binary can simply exec it.
 - **ISO extraction**: `skate-xiso` (workspace crate, xdvdfs-based) extracts
-  Xbox 360 ISOs. Set `SKATE_XISO` if the binary is not under `target/`.
+  Xbox 360 ISOs natively; the pipeline prefers it over the extract-xiso
+  download. A pre-extracted game folder (`default.xex` + `data/`) also works.
+
+## Steam Deck
+
+SteamOS has no compiler by default and the `deck` user often has no sudo.
+`./steamdeck_setup.sh` (or `./setup.sh`) installs rustup and a home-folder
+micromamba toolchain under `$HOME/ccenv` (`libudev`, not `eudev`), fetches
+crates (`cargo fetch` has no `-p`), runs `./BUILD.sh`, extracts an Xbox 360
+ISO with `skate-xiso`, and converts assets with `tools/setup.py`.
+
+```sh
+./steamdeck_setup.sh --source /path/to/skate3-360.iso
+SKATE_ASSETS=$HOME/skate3-assets ./PLAY.sh
+```
+
+`--source` can be an Xbox 360 `.iso` or an extracted `default.xex` (keep
+`data/` beside it). A PS3 ISO will not convert. `--toolchain-only` stops
+after rustup/micromamba/fetch.
+
+Piped bootstrap clones the repo, then re-execs from the checkout so prompts
+use the TTY:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/SK8-ENGINE/skate-3-rust-engine/main/steamdeck_setup.sh | sh
+```
+
+Until this is merged, pin the branch that contains the script and set
+`SKATE_DECK_REPO` / `SKATE_DECK_BRANCH` if you are not cloning `main`.
 
 ## Gamepads
 

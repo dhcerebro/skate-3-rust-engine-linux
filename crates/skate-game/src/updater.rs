@@ -1,20 +1,14 @@
 //! The packaged helper owns networking/UI/staging. Only its ready signal exits Bevy.
-//! Without the `network` feature this module never spawns a helper or touches GitHub.
 use bevy::prelude::*;
-#[cfg(feature = "network")]
 use std::{path::PathBuf, process::{Child, Command}, time::{SystemTime, UNIX_EPOCH}};
 
 #[derive(Resource, Default)]
 pub(crate) struct Updater {
-    #[cfg(feature = "network")]
     child: Option<Child>,
-    #[cfg(feature = "network")]
     signal: Option<PathBuf>,
-    #[cfg(feature = "network")]
     temporary: Option<PathBuf>,
 }
 
-#[cfg(feature = "network")]
 fn helper_command(recover: bool, automatic: bool) -> Result<(Command, PathBuf, PathBuf), String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     let root = exe.parent().ok_or("Missing program directory")?;
@@ -43,43 +37,28 @@ fn helper_command(recover: bool, automatic: bool) -> Result<(Command, PathBuf, P
 
 /// Local recovery happens before the supervisor opens the executable again.
 pub(crate) fn recover() -> Result<bool, String> {
-    #[cfg(not(feature = "network"))]
-    {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    if !exe.parent().is_some_and(|p| p.join(".update-transaction/journal.json").exists()) {
         return Ok(false);
     }
-    #[cfg(feature = "network")]
-    {
-        let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-        if !exe.parent().is_some_and(|p| p.join(".update-transaction/journal.json").exists()) {
-            return Ok(false);
-        }
-        let (mut command, _, _) = helper_command(true, false)?;
-        command.spawn().map_err(|e| e.to_string())?;
-        Ok(true)
-    }
+    let (mut command, _, _) = helper_command(true, false)?;
+    command.spawn().map_err(|e| e.to_string())?;
+    Ok(true)
 }
 
 impl Updater {
     pub(crate) fn open(&mut self, automatic: bool) -> String {
-        #[cfg(not(feature = "network"))]
-        {
-            let _ = automatic;
-            return "Updates are compiled out of this build.".into();
-        }
-        #[cfg(feature = "network")]
-        {
-            if self.child.is_some() { return "Updates window is already open.".into(); }
-            match helper_command(false, automatic).and_then(|(mut cmd, signal, temp)| {
-                cmd.spawn().map(|child| (child, signal, temp)).map_err(|e| e.to_string())
-            }) {
-                Ok((child, signal, temp)) => {
-                    self.child = Some(child);
-                    self.signal = Some(signal);
-                    self.temporary = Some(temp);
-                    "Updates opened in a separate window.".into()
-                }
-                Err(error) => error,
+        if self.child.is_some() { return "Updates window is already open.".into(); }
+        match helper_command(false, automatic).and_then(|(mut cmd, signal, temp)| {
+            cmd.spawn().map(|child| (child, signal, temp)).map_err(|e| e.to_string())
+        }) {
+            Ok((child, signal, temp)) => {
+                self.child = Some(child);
+                self.signal = Some(signal);
+                self.temporary = Some(temp);
+                "Updates opened in a separate window.".into()
             }
+            Err(error) => error,
         }
     }
 }
@@ -87,15 +66,11 @@ impl Updater {
 pub(crate) struct UpdaterPlugin;
 impl Plugin for UpdaterPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Updater>();
-        #[cfg(feature = "network")]
-        {
-            app.add_systems(Startup, |mut updater: ResMut<Updater>| { updater.open(true); })
-                .add_systems(Update, poll);
-        }
+        app.init_resource::<Updater>()
+            .add_systems(Startup, |mut updater: ResMut<Updater>| { updater.open(true); })
+            .add_systems(Update, poll);
     }
 }
-#[cfg(feature = "network")]
 fn poll(mut updater: ResMut<Updater>, mut exit: MessageWriter<AppExit>) {
     if updater.signal.as_ref().is_some_and(|p| p.is_file()) {
         updater.signal = None;

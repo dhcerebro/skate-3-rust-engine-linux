@@ -1,14 +1,14 @@
 #!/bin/sh
-# Steam Deck / Linux: clone (if needed), toolchain, build, Xbox 360 ISO
-# extract, asset convert. No sudo.
+# Steam Deck: clone (if needed), home-folder toolchain, ./BUILD.sh, Xbox 360
+# ISO extract, asset convert. No sudo. Same Cargo features as other Linux
+# glibc builds (Steam + UDP stay on).
 #
-# Encodes the Deck hurdles: cargo fetch has no -p; cc/pkg-config live in
-# $HOME/ccenv; conda-forge package is libudev (not eudev); skate-xiso is a
-# workspace crate; PLAY.sh accepts the setup --base dir; Xbox 360 default.xex
-# only (not a PS3 ISO).
+# Deck hurdles: cargo fetch has no -p; cc/pkg-config live in $HOME/ccenv;
+# conda-forge package is libudev (not eudev); skate-xiso is a workspace crate;
+# PLAY.sh accepts the setup --base dir; Xbox 360 default.xex only (not PS3).
 #
-#   git clone <repo> && cd skate-3-rust-engine-linux && ./steamdeck_setup.sh
-#   curl -fsSL <raw-url>/steamdeck_setup.sh | sh
+#   ./steamdeck_setup.sh
+#   ./steamdeck_setup.sh --source /path/to/skate3-360.iso
 set -e
 
 repo_url="${SKATE_DECK_REPO:-https://github.com/dhcerebro/skate-3-rust-engine-linux.git}"

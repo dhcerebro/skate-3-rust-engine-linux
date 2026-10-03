@@ -31,7 +31,6 @@ const RESOLUTIONS: &[(u32, u32)] = &[
 const SCALES: &[u32] = &[25, 50, 67, 75, 85, 100];
 const DAY_SPEEDS: &[u32] = &[0, 1, 10, 30, 60, 120, 360, 720];
 const LIMITS: &[u32] = &[0, 30, 60, 90, 120, 144, 165, 240];
-const NETWORK_ENABLED: bool = cfg!(feature = "network");
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -461,19 +460,11 @@ pub(crate) fn interact(
                 }
                 10 => { custom_models.request_stock(); customiser.begin(); },
                 11 => {
-                    if NETWORK_ENABLED {
-                        menu.multiplayer = true;
-                        menu.selected = 0;
-                    } else {
-                        menu.status = "Multiplayer is compiled out of this build.".into();
-                    }
+                    menu.multiplayer = true;
+                    menu.selected = 0;
                 }
                 12 => custom_models.begin(),
-                13 => menu.status = if NETWORK_ENABLED {
-                    updater.open(false)
-                } else {
-                    "Updates are compiled out of this build.".into()
-                },
+                13 => menu.status = updater.open(false),
                 14 => travel.open = true,
                 15 => mods.begin(),
                 16 => { menu.daylight = true; menu.selected = 0; menu.status = "Custom maps: change time, cycle speed and ambient light. Retail lighting stays authored.".into(); },
@@ -674,11 +665,11 @@ fn labels(
                 9 => "Quit game".into(),
                 10 => "Character customiser".into(),
                 12 => "Custom models".into(),
-                13 => if NETWORK_ENABLED { "Updates".into() } else { "Updates (disabled)".into() },
+                13 => "Updates".into(),
                 15 => "Mods".into(),
                 14 => "Teleport…".into(),
                 16 => "Day & night…".into(),
-                _ => if NETWORK_ENABLED { "Multiplayer".into() } else { "Multiplayer (disabled)".into() },
+                _ => "Multiplayer".into(),
             }
         };
     }
